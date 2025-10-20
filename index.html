@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spelling Bee Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .animate-shake {
+            animation: shake 0.5s;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+</head>
+<body class="bg-gradient-to-br from-pink-100 to-purple-300">
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef } = React;
+
+        const GameState = {
+            Start: 0,
+            TopicSelection: 1,
+            Playing: 2,
+            Congrats: 3,
+            ReviewErrors: 4,
+        };
+
+        const ingTopicSentences = [
+            { en: 'playing', vi: 'play', meaning: 'chơi' },
+            { en: 'reading', vi: 'read', meaning: 'đọc' },
+            { en: 'writing', vi: 'write', meaning: 'viết' },
+            { en: 'drawing', vi: 'draw', meaning: 'vẽ' },
+            { en: 'cooking', vi: 'cook', meaning: 'nấu ăn' },
+            { en: 'cleaning', vi: 'clean', meaning: 'dọn dẹp' },
+            { en: 'washing', vi: 'wash', meaning: 'rửa, giặt' },
+            { en: 'dancing', vi: 'dance', meaning: 'nhảy, múa' },
+            { en: 'singing', vi: 'sing', meaning: 'hát' },
+            { en: 'talking', vi: 'talk', meaning: 'nói chuyện' },
+            { en: 'walking', vi: 'walk', meaning: 'đi bộ' },
+            { en: 'running', vi: 'run', meaning: 'chạy' },
+            { en: 'swimming', vi: 'swim', meaning: 'bơi' },
+            { en: 'jumping', vi: 'jump', meaning: 'nhảy' },
+            { en: 'making', vi: 'make', meaning: 'làm, tạo ra' },
+            { en: 'taking', vi: 'take', meaning: 'lấy, cầm' },
+            { en: 'using', vi: 'use', meaning: 'sử dụng' },
+            { en: 'riding', vi: 'ride', meaning: 'cưỡi, đi xe' },
+            { en: 'driving', vi: 'drive', meaning: 'lái xe' },
+            { en: 'coming', vi: 'come', meaning: 'đến' },
+            { en: 'going', vi: 'go', meaning: 'đi' },
+            { en: 'having', vi: 'have', meaning: 'có' },
+            { en: 'doing', vi: 'do', meaning: 'làm' },
+            { en: 'eating', vi: 'eat', meaning: 'ăn' },
+            { en: 'drinking', vi: 'drink', meaning: 'uống' },
+            { en: 'watching', vi: 'watch', meaning: 'xem' },
+            { en: 'listening', vi: 'listen', meaning: 'nghe' },
+            { en: 'studying', vi: 'study', meaning: 'học' },
+            { en: 'working', vi: 'work', meaning: 'làm việc' },
+            { en: 'helping', vi: 'help', meaning: 'giúp đỡ' },
+            { en: 'sleeping', vi: 'sleep', meaning: 'ngủ' },
+            { en: 'sitting', vi: 'sit', meaning: 'ngồi' },
+            { en: 'getting', vi: 'get', meaning: 'lấy, có được' },
+            { en: 'putting', vi: 'put', meaning: 'đặt, để' },
+            { en: 'cutting', vi: 'cut', meaning: 'cắt' },
+            { en: 'hopping', vi: 'hop', meaning: 'nhảy lò cò' },
+            { en: 'planning', vi: 'plan', meaning: 'lên kế hoạch' },
+            { en: 'stopping', vi: 'stop', meaning: 'dừng lại' },
+            { en: 'shopping', vi: 'shop', meaning: 'mua sắm' },
+            { en: ['travelling', 'traveling'], vi: 'travel', meaning: 'du lịch' },
+            { en: 'lying', vi: 'lie', meaning: 'nằm' },
+            { en: 'tying', vi: 'tie', meaning: 'buộc, thắt' },
+            { en: 'dying', vi: 'die', meaning: 'chết' },
+            { en: 'smiling', vi: 'smile', meaning: 'mỉm cười' },
+            { en: 'opening', vi: 'open', meaning: 'mở' },
+            { en: 'closing', vi: 'close', meaning: 'đóng' },
+            { en: 'climbing', vi: 'climb', meaning: 'leo, trèo' },
+            { en: 'brushing', vi: 'brush', meaning: 'chải' },
+            { en: 'fixing', vi: 'fix', meaning: 'sửa chữa' },
+            { en: 'painting', vi: 'paint', meaning: 'sơn, vẽ' },
+        ].map(item => ({ ...item, emoji: '✍️' }));
+
+        const correctionTopicSentences = [
+            { vi: "He is runing in the park.", en: "He is running in the park.", meaning: "Anh ấy đang chạy trong công viên." },
+            { vi: "She is swiming in the pool.", en: "She is swimming in the pool.", meaning: "Cô ấy đang bơi trong hồ bơi." },
+            { vi: "They are makeing a cake.", en: "They are making a cake.", meaning: "Họ đang làm một cái bánh." },
+            { vi: "I am writeing a letter.", en: "I am writing a letter.", meaning: "Tôi đang viết một lá thư." },
+            { vi: "We are danceing together.", en: "We are dancing together.", meaning: "Chúng tôi đang nhảy cùng nhau." },
+            { vi: "He is cuting some paper.", en: "He is cutting some paper.", meaning: "Anh ấy đang cắt vài tờ giấy." },
+            { vi: "The boy is hoppping on one leg.", en: "The boy is hopping on one leg.", meaning: "Cậu bé đang nhảy lò cò." },
+            { vi: "She is planing her trip.", en: "She is planning her trip.", meaning: "Cô ấy đang lên kế hoạch cho chuyến đi của mình." },
+            { vi: "He is stoping the car.", en: "He is stopping the car.", meaning: "Anh ấy đang dừng xe lại." },
+            { vi: "They are shoping for clothes.", en: "They are shopping for clothes.", meaning: "Họ đang mua sắm quần áo." },
+            { vi: "The cat is lieing on the bed.", en: "The cat is lying on the bed.", meaning: "Con mèo đang nằm trên giường." },
+            { vi: "He is tieing his shoes.", en: "He is tying his shoes.", meaning: "Anh ấy đang buộc dây giày." },
+            { vi: "She is smileing at me.", en: "She is smiling at me.", meaning: "Cô ấy đang mỉm cười với tôi." },
+            { vi: "We are haveing lunch.", en: "We are having lunch.", meaning: "Chúng tôi đang ăn trưa." },
+            { vi: "He is comeing home.", en: "He is coming home.", meaning: "Anh ấy đang về nhà." },
+            { vi: "She is takeing photos.", en: "She is taking photos.", meaning: "Cô ấy đang chụp ảnh." },
+            { vi: "They are driveing to school.", en: "They are driving to school.", meaning: "Họ đang lái xe đến trường." },
+            { vi: "He is rideing a bike.", en: "He is riding a bike.", meaning: "Anh ấy đang đạp xe." },
+            { vi: "I am makeing breakfast.", en: "I am making breakfast.", meaning: "Tôi đang làm bữa sáng." },
+            { vi: "We are useing the computer.", en: "We are using the computer.", meaning: "Chúng tôi đang sử dụng máy tính." },
+            { vi: "She is readng a book.", en: "She is reading a book.", meaning: "Cô ấy đang đọc một cuốn sách." },
+            { vi: "He is writting a story.", en: "He is writing a story.", meaning: "Anh ấy đang viết một câu chuyện." },
+            { vi: "They are claping their hands.", en: "They are clapping their hands.", meaning: "Họ đang vỗ tay." },
+            { vi: "I am sittng on the chair.", en: "I am sitting on the chair.", meaning: "Tôi đang ngồi trên ghế." },
+            { vi: "The baby is sleping.", en: "The baby is sleeping.", meaning: "Em bé đang ngủ." },
+            { vi: "She is geting ready for school.", en: "She is getting ready for school.", meaning: "Cô ấy đang chuẩn bị đi học." },
+            { vi: "He is puting his bag down.", en: "He is putting his bag down.", meaning: "Anh ấy đang đặt cặp xuống." },
+            { vi: "We are fixxing the bike.", en: "We are fixing the bike.", meaning: "Chúng tôi đang sửa xe đạp." },
+            { vi: "They are brushhing their teeth.", en: "They are brushing their teeth.", meaning: "Họ đang đánh răng." },
+            { vi: "I am cleanning my room.", en: "I am cleaning my room.", meaning: "Tôi đang dọn dẹp phòng của mình." },
+            { vi: "She is openning the door.", en: "She is opening the door.", meaning: "Cô ấy đang mở cửa." },
+            { vi: "He is cloosing the window.", en: "He is closing the window.", meaning: "Anh ấy đang đóng cửa sổ." },
+            { vi: "They are wachting TV.", en: "They are watching TV.", meaning: "Họ đang xem TV." },
+            { vi: "I am lisening to music.", en: "I am listening to music.", meaning: "Tôi đang nghe nhạc." },
+            { vi: "She is studing English.", en: "She is studying English.", meaning: "Cô ấy đang học tiếng Anh." },
+            { vi: "He is workking hard.", en: "He is working hard.", meaning: "Anh ấy đang làm việc chăm chỉ." },
+            { vi: "We are helpping our friends.", en: "We are helping our friends.", meaning: "Chúng tôi đang giúp đỡ bạn bè." },
+            { vi: "The dog is ranning fast.", en: "The dog is running fast.", meaning: "Con chó đang chạy nhanh." },
+            { vi: "They are eatting breakfast.", en: "They are eating breakfast.", meaning: "Họ đang ăn sáng." },
+            { vi: "She is drinkking water.", en: "She is drinking water.", meaning: "Cô ấy đang uống nước." },
+            { vi: "He is traving to Japan.", en: "He is travelling to Japan.", meaning: "Anh ấy đang đi du lịch đến Nhật Bản." },
+            { vi: "We are paintting pictures.", en: "We are painting pictures.", meaning: "Chúng tôi đang vẽ tranh." },
+            { vi: "The man is climing the mountain.", en: "The man is climbing the mountain.", meaning: "Người đàn ông đang leo núi." },
+            { vi: "She is jumpng rope.", en: "She is jumping rope.", meaning: "Cô ấy đang nhảy dây." },
+            { vi: "He is talkng to his teacher.", en: "He is talking to his teacher.", meaning: "Cậu ấy đang nói chuyện với giáo viên của mình." },
+            { vi: "They are dancng on the stage.", en: "They are dancing on the stage.", meaning: "Họ đang nhảy trên sân khấu." },
+            { vi: "I am plaing the piano.", en: "I am playing the piano.", meaning: "Tôi đang chơi piano." },
+            { vi: "She is goiing to the market.", en: "She is going to the market.", meaning: "Cô ấy đang đi chợ." },
+            { vi: "He is reeding a newspaper.", en: "He is reading a newspaper.", meaning: "Ông ấy đang đọc báo." },
+            { vi: "They are smilling happily.", en: "They are smiling happily.", meaning: "Họ đang mỉm cười hạnh phúc." },
+        ].map(item => ({ ...item, emoji: '🔍' }));
+
+        const presentContinuousTopicSentences = [
+            { vi: "He runs to the park.", en: "He is running to the park.", promptMeaning: "Anh ấy chạy đến công viên.", meaning: "Anh ấy đang chạy đến công viên." },
+            { vi: "She cooks dinner.", en: "She is cooking dinner.", promptMeaning: "Cô ấy nấu bữa tối.", meaning: "Cô ấy đang nấu bữa tối." },
+            { vi: "They play football.", en: "They are playing football.", promptMeaning: "Họ chơi bóng đá.", meaning: "Họ đang chơi bóng đá." },
+            { vi: "I read a book.", en: "I am reading a book.", promptMeaning: "Tôi đọc một cuốn sách.", meaning: "Tôi đang đọc một cuốn sách." },
+            { vi: "We write a letter.", en: "We are writing a letter.", promptMeaning: "Chúng tôi viết một lá thư.", meaning: "Chúng tôi đang viết một lá thư." },
+            { vi: "He swims in the pool.", en: "He is swimming in the pool.", promptMeaning: "Anh ấy bơi trong hồ bơi.", meaning: "Anh ấy đang bơi trong hồ bơi." },
+            { vi: "She dances beautifully.", en: "She is dancing beautifully.", promptMeaning: "Cô ấy nhảy rất đẹp.", meaning: "Cô ấy đang nhảy rất đẹp." },
+            { vi: "They sing a song.", en: "They are singing a song.", promptMeaning: "Họ hát một bài hát.", meaning: "Họ đang hát một bài hát." },
+            { vi: "I study English.", en: "I am studying English.", promptMeaning: "Tôi học tiếng Anh.", meaning: "Tôi đang học tiếng Anh." },
+            { vi: "We clean the classroom.", en: "We are cleaning the classroom.", promptMeaning: "Chúng tôi dọn dẹp lớp học.", meaning: "Chúng tôi đang dọn dẹp lớp học." },
+            { vi: "He watches TV.", en: "He is watching TV.", promptMeaning: "Anh ấy xem TV.", meaning: "Anh ấy đang xem TV." },
+            { vi: "She listens to music.", en: "She is listening to music.", promptMeaning: "Cô ấy nghe nhạc.", meaning: "Cô ấy đang nghe nhạc." },
+            { vi: "They work in the garden.", en: "They are working in the garden.", promptMeaning: "Họ làm việc trong vườn.", meaning: "Họ đang làm việc trong vườn." },
+            { vi: "I eat breakfast.", en: "I am eating breakfast.", promptMeaning: "Tôi ăn sáng.", meaning: "Tôi đang ăn sáng." },
+            { vi: "We drink milk.", en: "We are drinking milk.", promptMeaning: "Chúng tôi uống sữa.", meaning: "Chúng tôi đang uống sữa." },
+            { vi: "He plays the piano.", en: "He is playing the piano.", promptMeaning: "Anh ấy chơi piano.", meaning: "Anh ấy đang chơi piano." },
+            { vi: "She paints a picture.", en: "She is painting a picture.", promptMeaning: "Cô ấy vẽ một bức tranh.", meaning: "Cô ấy đang vẽ một bức tranh." },
+            { vi: "They help their parents.", en: "They are helping their parents.", promptMeaning: "Họ giúp đỡ bố mẹ.", meaning: "Họ đang giúp đỡ bố mẹ." },
+            { vi: "I wash the dishes.", en: "I am washing the dishes.", promptMeaning: "Tôi rửa bát.", meaning: "Tôi đang rửa bát." },
+            { vi: "We sit on the bench.", en: "We are sitting on the bench.", promptMeaning: "Chúng tôi ngồi trên ghế dài.", meaning: "Chúng tôi đang ngồi trên ghế dài." },
+            { vi: "He cuts the paper.", en: "He is cutting the paper.", promptMeaning: "Anh ấy cắt giấy.", meaning: "Anh ấy đang cắt giấy." },
+            { vi: "She opens the window.", en: "She is opening the window.", promptMeaning: "Cô ấy mở cửa sổ.", meaning: "Cô ấy đang mở cửa sổ." },
+            { vi: "They close the door.", en: "They are closing the door.", promptMeaning: "Họ đóng cửa.", meaning: "Họ đang đóng cửa." },
+            { vi: "I drive a car.", en: "I am driving a car.", promptMeaning: "Tôi lái xe ô tô.", meaning: "Tôi đang lái xe ô tô." },
+            { vi: "We go to school.", en: "We are going to school.", promptMeaning: "Chúng tôi đi học.", meaning: "Chúng tôi đang đi học." },
+            { vi: "He rides a bike.", en: "He is riding a bike.", promptMeaning: "Anh ấy đi xe đạp.", meaning: "Anh ấy đang đi xe đạp." },
+            { vi: "She runs fast.", en: "She is running fast.", promptMeaning: "Cô ấy chạy nhanh.", meaning: "Cô ấy đang chạy nhanh." },
+            { vi: "They talk to each other.", en: "They are talking to each other.", promptMeaning: "Họ nói chuyện với nhau.", meaning: "Họ đang nói chuyện với nhau." },
+            { vi: "I make a cake.", en: "I am making a cake.", promptMeaning: "Tôi làm một cái bánh.", meaning: "Tôi đang làm một cái bánh." },
+            { vi: "We take photos.", en: "We are taking photos.", promptMeaning: "Chúng tôi chụp ảnh.", meaning: "Chúng tôi đang chụp ảnh." },
+            { vi: "He gets up early.", en: "He is getting up early.", promptMeaning: "Anh ấy thức dậy sớm.", meaning: "Anh ấy đang thức dậy sớm." },
+            { vi: "She puts on her shoes.", en: "She is putting on her shoes.", promptMeaning: "Cô ấy đi giày.", meaning: "Cô ấy đang đi giày." },
+            { vi: "They shop in the mall.", en: "They are shopping in the mall.", promptMeaning: "Họ mua sắm ở trung tâm thương mại.", meaning: "Họ đang mua sắm ở trung tâm thương mại." },
+            { vi: "I travel to Hanoi.", en: "I am travelling to Hanoi.", promptMeaning: "Tôi đi du lịch Hà Nội.", meaning: "Tôi đang đi du lịch Hà Nội." },
+            { vi: "We plan our holiday.", en: "We are planning our holiday.", promptMeaning: "Chúng tôi lên kế hoạch cho kỳ nghỉ.", meaning: "Chúng tôi đang lên kế hoạch cho kỳ nghỉ." },
+            { vi: "He stops the car.", en: "He is stopping the car.", promptMeaning: "Anh ấy dừng xe.", meaning: "Anh ấy đang dừng xe." },
+            { vi: "She lies on the bed.", en: "She is lying on the bed.", promptMeaning: "Cô ấy nằm trên giường.", meaning: "Cô ấy đang nằm trên giường." },
+            { vi: "They tie their shoes.", en: "They are tying their shoes.", promptMeaning: "Họ buộc dây giày.", meaning: "Họ đang buộc dây giày." },
+            { vi: "I smile at my friend.", en: "I am smiling at my friend.", promptMeaning: "Tôi mỉm cười với bạn tôi.", meaning: "Tôi đang mỉm cười với bạn tôi." },
+            { vi: "We jump over the fence.", en: "We are jumping over the fence.", promptMeaning: "Chúng tôi nhảy qua hàng rào.", meaning: "Chúng tôi đang nhảy qua hàng rào." },
+            { vi: "He brushes his teeth.", en: "He is brushing his teeth.", promptMeaning: "Anh ấy đánh răng.", meaning: "Anh ấy đang đánh răng." },
+            { vi: "She washes her face.", en: "She is washing her face.", promptMeaning: "Cô ấy rửa mặt.", meaning: "Cô ấy đang rửa mặt." },
+            { vi: "They climb the mountain.", en: "They are climbing the mountain.", promptMeaning: "Họ leo núi.", meaning: "Họ đang leo núi." },
+            { vi: "I fix my bike.", en: "I am fixing my bike.", promptMeaning: "Tôi sửa xe đạp của mình.", meaning: "Tôi đang sửa xe đạp của mình." },
+            { vi: "We draw a picture.", en: "We are drawing a picture.", promptMeaning: "Chúng tôi vẽ một bức tranh.", meaning: "Chúng tôi đang vẽ một bức tranh." },
+            { vi: "He eats lunch.", en: "He is eating lunch.", promptMeaning: "Anh ấy ăn trưa.", meaning: "Anh ấy đang ăn trưa." },
+            { vi: "She drinks coffee.", en: "She is drinking coffee.", promptMeaning: "Cô ấy uống cà phê.", meaning: "Cô ấy đang uống cà phê." },
+            { vi: "They read the newspaper.", en: "They are reading the newspaper.", promptMeaning: "Họ đọc báo.", meaning: "Họ đang đọc báo." },
+            { vi: "I listen to my teacher.", en: "I am listening to my teacher.", promptMeaning: "Tôi lắng nghe giáo viên của mình.", meaning: "Tôi đang lắng nghe giáo viên của mình." },
+            { vi: "We play in the yard.", en: "We are playing in the yard.", promptMeaning: "Chúng tôi chơi trong sân.", meaning: "Chúng tôi đang chơi trong sân." },
+        ].map(item => ({ ...item, emoji: '📝' }));
+
+        const writeFullSentenceTopicSentences = [
+            { vi: "I / play football", en: "I am playing football.", meaning: "Tôi đang chơi bóng đá." },
+            { vi: "She / cook dinner", en: "She is cooking dinner.", meaning: "Cô ấy đang nấu bữa tối." },
+            { vi: "They / read a book", en: "They are reading a book.", meaning: "Họ đang đọc một cuốn sách." },
+            { vi: "He / write a letter", en: "He is writing a letter.", meaning: "Anh ấy đang viết một lá thư." },
+            { vi: "We / draw a picture", en: "We are drawing a picture.", meaning: "Chúng tôi đang vẽ một bức tranh." },
+            { vi: "I / clean my room", en: "I am cleaning my room.", meaning: "Tôi đang dọn dẹp phòng của mình." },
+            { vi: "She / wash the dishes", en: "She is washing the dishes.", meaning: "Cô ấy đang rửa bát." },
+            { vi: "They / dance together", en: "They are dancing together.", meaning: "Họ đang nhảy cùng nhau." },
+            { vi: "He / sing a song", en: "He is singing a song.", meaning: "Anh ấy đang hát một bài hát." },
+            { vi: "We / talk to our teacher", en: "We are talking to our teacher.", meaning: "Chúng tôi đang nói chuyện với giáo viên của chúng tôi." },
+            { vi: "I / walk to school", en: "I am walking to school.", meaning: "Tôi đang đi bộ đến trường." },
+            { vi: "She / run in the park", en: "She is running in the park.", meaning: "Cô ấy đang chạy trong công viên." },
+            { vi: "They / swim in the pool", en: "They are swimming in the pool.", meaning: "Họ đang bơi trong hồ bơi." },
+            { vi: "He / jump over the fence", en: "He is jumping over the fence.", meaning: "Anh ấy đang nhảy qua hàng rào." },
+            { vi: "We / make a cake", en: "We are making a cake.", meaning: "Chúng tôi đang làm một cái bánh." },
+            { vi: "I / take photos", en: "I am taking photos.", meaning: "Tôi đang chụp ảnh." },
+            { vi: "She / use the computer", en: "She is using the computer.", meaning: "Cô ấy đang sử dụng máy tính." },
+            { vi: "They / ride a bike", en: "They are riding a bike.", meaning: "Họ đang đi xe đạp." },
+            { vi: "He / drive a car", en: "He is driving a car.", meaning: "Anh ấy đang lái xe ô tô." },
+            { vi: "We / come home", en: "We are coming home.", meaning: "Chúng tôi đang về nhà." },
+            { vi: "I / go to the market", en: "I am going to the market.", meaning: "Tôi đang đi chợ." },
+            { vi: "She / have lunch", en: "She is having lunch.", meaning: "Cô ấy đang ăn trưa." },
+            { vi: "They / do homework", en: "They are doing homework.", meaning: "Họ đang làm bài tập về nhà." },
+            { vi: "He / eat an apple", en: "He is eating an apple.", meaning: "Anh ấy đang ăn một quả táo." },
+            { vi: "We / drink water", en: "We are drinking water.", meaning: "Chúng tôi đang uống nước." },
+            { vi: "I / watch TV", en: "I am watching TV.", meaning: "Tôi đang xem TV." },
+            { vi: "She / listen to music", en: "She is listening to music.", meaning: "Cô ấy đang nghe nhạc." },
+            { vi: "They / study English", en: "They are studying English.", meaning: "Họ đang học tiếng Anh." },
+            { vi: "He / work in the garden", en: "He is working in the garden.", meaning: "Anh ấy đang làm việc trong vườn." },
+            { vi: "We / help our friends", en: "We are helping our friends.", meaning: "Chúng tôi đang giúp đỡ bạn bè của chúng tôi." },
+            { vi: "I / sleep on the bed", en: "I am sleeping on the bed.", meaning: "Tôi đang ngủ trên giường." },
+            { vi: "She / sit on the chair", en: "She is sitting on the chair.", meaning: "Cô ấy đang ngồi trên ghế." },
+            { vi: "They / get ready for school", en: "They are getting ready for school.", meaning: "Họ đang chuẩn bị đi học." },
+            { vi: "He / put on his shoes", en: "He is putting on his shoes.", meaning: "Anh ấy đang đi giày." },
+            { vi: "We / cut the paper", en: "We are cutting the paper.", meaning: "Chúng tôi đang cắt giấy." },
+            { vi: "I / hop on one leg", en: "I am hopping on one leg.", meaning: "Tôi đang nhảy lò cò." },
+            { vi: "She / plan her trip", en: "She is planning her trip.", meaning: "Cô ấy đang lên kế hoạch cho chuyến đi của mình." },
+            { vi: "They / stop the car", en: "They are stopping the car.", meaning: "Họ đang dừng xe lại." },
+            { vi: "He / shop in the mall", en: "He is shopping in the mall.", meaning: "Anh ấy đang mua sắm ở trung tâm thương mại." },
+            { vi: "We / travel to Hanoi", en: "We are travelling to Hanoi.", meaning: "Chúng tôi đang đi du lịch Hà Nội." },
+            { vi: "I / lie on the bed", en: "I am lying on the bed.", meaning: "Tôi đang nằm trên giường." },
+            { vi: "She / tie her shoes", en: "She is tying her shoes.", meaning: "Cô ấy đang buộc dây giày." },
+            { vi: "They / smile at their friends", en: "They are smiling at their friends.", meaning: "Họ đang mỉm cười với bạn của họ." },
+            { vi: "He / open the door", en: "He is opening the door.", meaning: "Anh ấy đang mở cửa." },
+            { vi: "We / close the window", en: "We are closing the window.", meaning: "Chúng tôi đang đóng cửa sổ." },
+            { vi: "I / climb the mountain", en: "I am climbing the mountain.", meaning: "Tôi đang leo núi." },
+            { vi: "She / brush her teeth", en: "She is brushing her teeth.", meaning: "Cô ấy đang đánh răng." },
+            { vi: "They / fix the bike", en: "They are fixing the bike.", meaning: "Họ đang sửa xe đạp." },
+            { vi: "He / paint a picture", en: "He is painting a picture.", meaning: "Anh ấy đang vẽ một bức tranh." },
+            { vi: "We / draw in the notebook", en: "We are drawing in the notebook.", meaning: "Chúng tôi đang vẽ trong vở." },
+        ].map(item => ({ ...item, emoji: '✍️' }));
+
+
+        const TOPICS = [
+            {
+                name: "Verb +ing Practice",
+                sentences: ingTopicSentences.sort(() => Math.random() - 0.5),
+                isSpecial: true,
+                color: 'bg-red-500',
+                hoverColor: 'hover:bg-red-600',
+            },
+            {
+                name: "Find the Mistake & Rewrite",
+                sentences: correctionTopicSentences.sort(() => Math.random() - 0.5),
+                isCorrectionTopic: true,
+                color: 'bg-blue-500',
+                hoverColor: 'hover:bg-blue-600',
+            },
+            {
+                name: "Rewrite: Present Continuous",
+                sentences: presentContinuousTopicSentences.sort(() => Math.random() - 0.5),
+                isCorrectionTopic: true,
+                color: 'bg-green-500',
+                hoverColor: 'hover:bg-green-600',
+            },
+            {
+                name: "Write Full Sentences: Present Continuous",
+                sentences: writeFullSentenceTopicSentences.sort(() => Math.random() - 0.5),
+                isCorrectionTopic: true,
+                color: 'bg-purple-500',
+                hoverColor: 'hover:bg-purple-600',
+            }
+        ];
+
+        const Confetti = () => {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                let width = window.innerWidth;
+                let height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+
+                const particles = [];
+                const colors = ['#ec407a', '#ab47bc', '#42a5f5', '#66bb6a', '#ffa726', '#ef5350'];
+
+                class Particle {
+                    constructor() {
+                        this.x = Math.random() * width;
+                        this.y = Math.random() * -height;
+                        this.size = Math.random() * 10 + 5;
+                        this.speedX = Math.random() * 3 - 1.5;
+                        this.speedY = Math.random() * 5 + 2;
+                        this.color = colors[Math.floor(Math.random() * colors.length)];
+                    }
+
+                    update() {
+                        this.x += this.speedX;
+                        this.y += this.speedY;
+                        if (this.y > height) {
+                            this.y = -this.size;
+                            this.x = Math.random() * width;
+                        }
+                    }
+
+                    draw() {
+                        if (!ctx) return;
+                        ctx.fillStyle = this.color;
+                        ctx.beginPath();
+                        ctx.fillRect(this.x, this.y, this.size, this.size * 1.5);
+                        ctx.fill();
+                    }
+                }
+
+                function init() {
+                    for (let i = 0; i < 150; i++) {
+                        particles.push(new Particle());
+                    }
+                }
+
+                let animationFrameId;
+
+                function animate() {
+                    if (!ctx) return;
+                    ctx.clearRect(0, 0, width, height);
+                    particles.forEach(p => {
+                        p.update();
+                        p.draw();
+                    });
+                    animationFrameId = requestAnimationFrame(animate);
+                }
+
+                init();
+                animate();
+
+                const timeoutId = setTimeout(() => {
+                    cancelAnimationFrame(animationFrameId);
+                }, 5000);
+
+                const handleResize = () => {
+                    width = window.innerWidth;
+                    height = window.innerHeight;
+                    if (canvas) {
+                        canvas.width = width;
+                        canvas.height = height;
+                    }
+                };
+
+                window.addEventListener('resize', handleResize);
+
+                return () => {
+                    cancelAnimationFrame(animationFrameId);
+                    clearTimeout(timeoutId);
+                    window.removeEventListener('resize', handleResize);
+                };
+            }, []);
+
+            return <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none z-10" />;
+        };
+
+        const ErrorDiff = ({ userAnswer, correctAnswer }) => {
+            const chars = userAnswer.split('');
+            return (
+                <React.Fragment>
+                    {chars.map((char, index) => {
+                        const isCorrect = index < correctAnswer.length && char.toLowerCase() === correctAnswer[index].toLowerCase();
+                        return (
+                            <span key={index} className={!isCorrect ? 'text-red-600 font-bold underline bg-red-100' : ''}>
+                                {char}
+                            </span>
+                        );
+                    })}
+                </React.Fragment>
+            );
+        };
+
+        const ReviewErrorsScreen = ({ errors, onBack }) => {
+            const getCorrectAnswer = (sentence) => {
+                return Array.isArray(sentence.en) ? sentence.en[0] : sentence.en;
+            };
+
+            return (
+                <div className="p-6 bg-white rounded-3xl shadow-2xl max-w-4xl mx-auto">
+                    <h1 className="text-2xl md:text-3xl font-bold text-pink-600 text-center mb-6">
+                        Review Your Mistakes
+                    </h1>
+                    <ul className="list-none p-0 w-full max-h-[60vh] overflow-y-auto border border-gray-200 rounded-lg">
+                        {errors.map((error, index) => (
+                            <li key={index} className="p-4 border-b border-gray-200 text-left last:border-b-0">
+                                <div className="text-sm font-semibold text-gray-500 mb-2">
+                                    <span className="font-bold">Prompt: </span>
+                                    <span>
+                                        {error.sentence.vi}
+                                        {error.sentence.promptMeaning && ` (${error.sentence.promptMeaning})`}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="font-bold text-sm text-green-600 mr-2">Correct:</span>
+                                    <span className="text-green-700 break-all">{getCorrectAnswer(error.sentence)}</span>
+                                </div>
+                                <div>
+                                    <span className="font-bold text-sm text-red-600 mr-2">You wrote:</span>
+                                    <span className="text-red-700 break-all">
+                                        <ErrorDiff userAnswer={error.userAnswer} correctAnswer={getCorrectAnswer(error.sentence)} />
+                                    </span>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="text-center mt-6">
+                        <button
+                            onClick={onBack}
+                            className="py-3 px-8 bg-pink-500 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-pink-600 transform hover:-translate-y-1 transition-all"
+                        >
+                            Back to Topics
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const CongratsScreen = ({ score, total, hasErrors, onReview, onPlayAgain }) => {
+            const isPerfect = score === total;
+
+            return (
+                <div className="relative text-center p-8 bg-white rounded-3xl shadow-2xl overflow-hidden">
+                    {isPerfect && <Confetti />}
+                    <h1 className="text-[clamp(2em,6vw,3.5em)] font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 mb-2">
+                        {isPerfect ? "Perfect Score!" : "Well Done!"}
+                    </h1>
+                    <p className="text-[clamp(1.2em,4vw,1.8em)] text-gray-700 font-semibold mb-6">
+                        You scored {score} out of {total}.
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        {hasErrors && (
+                            <button
+                                onClick={onReview}
+                                className="w-full sm:w-auto py-3 px-8 bg-amber-500 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-amber-600 transform hover:-translate-y-1 transition-all"
+                            >
+                                Review Mistakes
+                            </button>
+                        )}
+                        <button
+                            onClick={onPlayAgain}
+                            className="w-full sm:w-auto py-3 px-8 bg-pink-500 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-pink-600 transform hover:-translate-y-1 transition-all"
+                        >
+                            Choose Another Topic
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const GameScreen = ({ topic, onGameFinish, onBackToTopics }) => {
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [userInput, setUserInput] = useState('');
+            const [score, setScore] = useState(0);
+            const [errors, setErrors] = useState([]);
+            const [feedback, setFeedback] = useState('idle');
+            const [showHint, setShowHint] = useState(false);
+            const [revealedAnswer, setRevealedAnswer] = useState('');
+            const [revealedMeaningText, setRevealedMeaningText] = useState('');
+            const [incorrectAttempts, setIncorrectAttempts] = useState(0);
+            const inputRef = useRef(null);
+
+            const currentSentence = topic.sentences[currentIndex];
+
+            const getCorrectAnswer = useCallback(() => {
+                if (!currentSentence) return '';
+                return Array.isArray(currentSentence.en) ? currentSentence.en[0] : currentSentence.en;
+            }, [currentSentence]);
+
+            const resetForNext = useCallback(() => {
+                setFeedback('idle');
+                setUserInput('');
+                setShowHint(false);
+                setRevealedAnswer('');
+                setRevealedMeaningText('');
+                setIncorrectAttempts(0);
+                if (currentIndex + 1 < topic.sentences.length) {
+                    setCurrentIndex(currentIndex + 1);
+                } else {
+                    onGameFinish(score, errors);
+                }
+            }, [currentIndex, topic.sentences.length, onGameFinish, score, errors]);
+
+            const handleCheck = useCallback(() => {
+                if (!userInput.trim() || feedback !== 'idle') return;
+
+                const correctAnswers = Array.isArray(currentSentence.en) ? currentSentence.en : [currentSentence.en];
+                const isAnswerCorrect = correctAnswers.some(ans => ans.trim().toLowerCase() === userInput.trim().toLowerCase());
+
+                if (isAnswerCorrect) {
+                    if (incorrectAttempts === 0) {
+                        setScore(s => s + 1);
+                    }
+                    setFeedback('correct');
+                    if (topic.isSpecial) {
+                        setRevealedAnswer(getCorrectAnswer());
+                    }
+                    if (topic.name.includes("Rewrite")) {
+                        setRevealedMeaningText(currentSentence.meaning || '');
+                    }
+                    setTimeout(() => {
+                        resetForNext();
+                    }, 1500);
+                } else {
+                    setIncorrectAttempts(prev => prev + 1);
+                    setFeedback('incorrect');
+
+                    const hasErrorForCurrentSentence = errors.some(e => e.sentence.vi === currentSentence.vi);
+                    if (!hasErrorForCurrentSentence) {
+                        setErrors(prev => [...prev, { sentence: currentSentence, userAnswer: userInput }]);
+                    }
+
+                    setTimeout(() => {
+                        setFeedback('idle');
+                        setUserInput('');
+                        if(inputRef.current) {
+                           inputRef.current.focus();
+                        }
+                    }, 500);
+                }
+            }, [userInput, currentSentence, resetForNext, getCorrectAnswer, topic.isSpecial, topic.name, incorrectAttempts, errors, feedback]);
+
+            const handleSpeak = useCallback(() => {
+                if (!('speechSynthesis' in window)) {
+                    alert("Sorry, your browser doesn't support text-to-speech.");
+                    return;
+                }
+
+                window.speechSynthesis.cancel();
+
+                if (topic.isSpecial && currentSentence) {
+                    const baseVerbUtterance = new SpeechSynthesisUtterance(currentSentence.vi);
+                    baseVerbUtterance.lang = 'en-US';
+
+                    const ingFormUtterance = new SpeechSynthesisUtterance(getCorrectAnswer());
+                    ingFormUtterance.lang = 'en-US';
+
+                    baseVerbUtterance.onend = () => {
+                        window.speechSynthesis.speak(ingFormUtterance);
+                    };
+
+                    window.speechSynthesis.speak(baseVerbUtterance);
+                } else {
+                    const textToSpeak = getCorrectAnswer();
+                    if (textToSpeak) {
+                        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        utterance.lang = 'en-US';
+                        window.speechSynthesis.speak(utterance);
+                    }
+                }
+            }, [getCorrectAnswer, currentSentence, topic.isSpecial]);
+
+            const handleHintPress = () => setShowHint(true);
+            const handleHintRelease = () => setShowHint(false);
+
+            useEffect(() => {
+                if (inputRef.current) {
+                    inputRef.current.focus();
+                }
+                handleSpeak();
+                const secondSpeakTimeout = setTimeout(() => handleSpeak(), 2500);
+
+                return () => {
+                    clearTimeout(secondSpeakTimeout);
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                    }
+                };
+            }, [currentIndex, handleSpeak]);
+
+            useEffect(() => {
+                const handleKeyPress = (e) => {
+                    if (e.key === 'Enter') {
+                        handleCheck();
+                    }
+                };
+                window.addEventListener('keydown', handleKeyPress);
+                return () => {
+                    window.removeEventListener('keydown', handleKeyPress);
+                };
+            }, [handleCheck]);
+
+            const inputClasses = {
+                idle: 'border-pink-500 focus:ring-pink-200',
+                correct: 'border-green-500 bg-green-50 focus:ring-green-200',
+                incorrect: 'border-red-500 bg-red-50 focus:ring-red-200 animate-shake'
+            };
+
+            if (!currentSentence) {
+                return null;
+            }
+
+            const getTopicInstruction = () => {
+                if (topic.name.includes("Mistake")) {
+                    return "Find the mistake and rewrite the correct sentence:";
+                }
+                if (topic.name.includes("Rewrite")) {
+                    return "Rewrite the sentence using the Present Continuous tense:";
+                }
+                if (topic.name.includes("Write Full Sentences")) {
+                    return "Write a complete sentence using the Present Continuous tense:";
+                }
+                return "";
+            }
+
+            return (
+                <div className="p-6 bg-white rounded-3xl shadow-2xl max-w-3xl mx-auto text-center">
+                    <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                        <div>
+                            <button
+                                onClick={onBackToTopics}
+                                className="text-pink-600 font-semibold hover:text-pink-800 transition-colors duration-200 flex items-center gap-1 text-sm sm:text-base"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Change Topic
+                            </button>
+                        </div>
+                        <div className="flex gap-4 items-center text-base sm:text-lg">
+                            <div className="font-bold text-pink-600">Score: {score}</div>
+                            <div className="font-bold text-gray-500">{currentIndex + 1} / {topic.sentences.length}</div>
+                        </div>
+                    </div>
+
+                    <div className="my-4 font-semibold text-pink-800 flex flex-col items-center justify-center gap-2 min-h-[120px]">
+                        {topic.isSpecial && currentSentence ? (
+                            <div className={`flex flex-col items-center gap-1 text-[clamp(1.8em,6vw,2.5em)]`}>
+                                <span className="font-mono tracking-wider">{currentSentence.vi} → {revealedAnswer || '?'}</span>
+                                {currentSentence.meaning && (
+                                    <span className="text-[clamp(1rem,3vw,1.2rem)] text-gray-500 italic font-medium">({currentSentence.meaning})</span>
+                                )}
+                            </div>
+                        ) : topic.isCorrectionTopic && currentSentence ? (
+                            <div className="text-[clamp(1.1em,4.5vw,1.5em)] text-center w-full">
+                                <p className="text-gray-500 text-[clamp(0.9rem,3vw,1.1rem)] mb-2">
+                                    {getTopicInstruction()}
+                                </p>
+                                <p className="font-bold text-gray-700 bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg inline-block">{currentSentence.emoji} <span>{currentSentence.vi}</span></p>
+                                {currentSentence.promptMeaning ? (
+                                    <p className="text-[clamp(1rem,3vw,1.2rem)] text-gray-500 italic font-medium mt-2">({currentSentence.promptMeaning})</p>
+                                ) : currentSentence.meaning && topic.name.includes("Write Full Sentences") ? (
+                                    <p className="text-[clamp(1rem,3vw,1.2rem)] text-gray-500 italic font-medium mt-2">({currentSentence.meaning})</p>
+                                ) : null}
+                            </div>
+                        ) : (
+                            <div className="text-[clamp(1.1em,4.5vw,1.6em)] italic flex items-center justify-center gap-3 flex-wrap">
+                                {currentSentence?.emoji} <span>{currentSentence?.vi}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="relative my-8">
+                        <input
+                            ref={inputRef}
+                            id="answerInput"
+                            type="text"
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                            disabled={feedback !== 'idle'}
+                            className={`w-full p-4 text-center text-[clamp(1.1em,4vw,1.6em)] rounded-xl border-4 box-border transition-all duration-300 outline-none focus:ring-4 ${inputClasses[feedback]}`}
+                        />
+                        {showHint && (
+                            <div id="hint" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-800 text-white py-3 px-5 rounded-lg text-lg font-semibold pointer-events-none">
+                                {getCorrectAnswer()}
+                            </div>
+                        )}
+                    </div>
+
+                    {revealedMeaningText && (
+                        <div className="my-4 text-lg text-green-700 font-semibold italic">
+                            {revealedMeaningText}
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap justify-center gap-4">
+                        <button onClick={handleSpeak} disabled={feedback !== 'idle'} className="py-3 px-7 bg-pink-500 text-white font-bold rounded-xl shadow-md hover:bg-pink-600 transform hover:-translate-y-0.5 transition-all disabled:bg-gray-400 disabled:transform-none">Listen</button>
+                        {incorrectAttempts >= 2 && (
+                            <button
+                                onMouseDown={handleHintPress}
+                                onMouseUp={handleHintRelease}
+                                onMouseLeave={handleHintRelease}
+                                onTouchStart={handleHintPress}
+                                onTouchEnd={handleHintRelease}
+                                disabled={feedback !== 'idle'}
+                                className="py-3 px-7 bg-amber-500 text-white font-bold rounded-xl shadow-md hover:bg-amber-600 transform hover:-translate-y-0.5 transition-all disabled:bg-gray-400 disabled:transform-none"
+                            >
+                                Hint
+                            </button>
+                        )}
+                        <button onClick={handleCheck} disabled={feedback !== 'idle'} className="py-3 px-7 bg-green-500 text-white font-bold rounded-xl shadow-md hover:bg-green-600 transform hover:-translate-y-0.5 transition-all disabled:bg-gray-400 disabled:transform-none">Check</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const TopicSelectionScreen = ({ topics, onSelectTopic, playerName }) => {
+            return (
+                <div className="text-center p-6 bg-white rounded-3xl shadow-2xl">
+                    <h1 className="text-[clamp(1.8em,5vw,2.5em)] font-bold text-pink-500 mb-2">
+                        Welcome, {playerName}!
+                    </h1>
+                    <p className="text-[clamp(1.2em,4vw,1.5em)] text-gray-600 font-semibold mb-8">
+                        Choose a Topic
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {topics.map((topic, index) => (
+                            <button
+                                key={index}
+                                onClick={() => onSelectTopic(topic)}
+                                className={`w-full py-6 px-4 text-white font-bold text-xl rounded-xl shadow-lg transform hover:-translate-y-1 transition-all ${topic.color} ${topic.hoverColor}`}
+                            >
+                                {topic.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const StartScreen = ({ onStart }) => {
+            const [name, setName] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (name.trim()) {
+                    onStart(name.trim());
+                }
+            };
+
+            return (
+                <div className="text-center p-6 bg-white rounded-3xl shadow-2xl animate-fade-in">
+                    <h1 className="text-[clamp(1.8em,5vw,2.5em)] font-bold text-pink-500 mb-2">
+                        Spelling Bee Challenge
+                    </h1>
+                    <p className="text-[clamp(1.2em,4vw,1.5em)] text-gray-600 font-semibold mb-8">
+                        Listen & Write Sentences
+                    </p>
+                    <form onSubmit={handleSubmit} className="flex flex-col items-center gap-6">
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Enter your name"
+                            className="w-full max-w-sm p-4 text-center text-lg border-2 border-pink-300 rounded-xl focus:ring-4 focus:ring-pink-200 focus:border-pink-500 transition-all outline-none"
+                            required
+                        />
+                        <button
+                            type="submit"
+                            className="w-full max-w-sm py-4 px-8 bg-green-500 text-white font-bold text-xl rounded-xl shadow-lg hover:bg-green-600 transform hover:-translate-y-1 transition-all"
+                        >
+                            Start Game
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [gameState, setGameState] = useState(GameState.Start);
+            const [playerName, setPlayerName] = useState('');
+            const [selectedTopic, setSelectedTopic] = useState(null);
+            const [errors, setErrors] = useState([]);
+            const [finalScore, setFinalScore] = useState(0);
+
+            const handleStart = useCallback((name) => {
+                setPlayerName(name);
+                setGameState(GameState.TopicSelection);
+            }, []);
+
+            const handleTopicSelect = useCallback((topic) => {
+                setSelectedTopic(topic);
+                setErrors([]);
+                setFinalScore(0);
+                setGameState(GameState.Playing);
+            }, []);
+
+            const handleGameFinish = useCallback((score, finalErrors) => {
+                setFinalScore(score);
+                setErrors(finalErrors);
+                setGameState(GameState.Congrats);
+            }, []);
+
+            const handleReview = useCallback(() => {
+                setGameState(GameState.ReviewErrors);
+            }, []);
+
+            const handlePlayAgain = useCallback(() => {
+                setGameState(GameState.TopicSelection);
+            }, []);
+
+            const handleBackToTopics = useCallback(() => {
+                setGameState(GameState.TopicSelection);
+            }, []);
+
+            const renderScreen = () => {
+                switch (gameState) {
+                    case GameState.Start:
+                        return <StartScreen onStart={handleStart} />;
+                    case GameState.TopicSelection:
+                        return <TopicSelectionScreen topics={TOPICS} onSelectTopic={handleTopicSelect} playerName={playerName} />;
+                    case GameState.Playing:
+                        if (!selectedTopic) return <TopicSelectionScreen topics={TOPICS} onSelectTopic={handleTopicSelect} playerName={playerName} />;
+                        return <GameScreen topic={selectedTopic} onGameFinish={handleGameFinish} onBackToTopics={handleBackToTopics} />;
+                    case GameState.Congrats:
+                        return <CongratsScreen score={finalScore} total={selectedTopic?.sentences.length || 0} hasErrors={errors.length > 0} onReview={handleReview} onPlayAgain={handlePlayAgain} />;
+                    case GameState.ReviewErrors:
+                        return <ReviewErrorsScreen errors={errors} onBack={handleBackToTopics} />;
+                    default:
+                        return <StartScreen onStart={handleStart} />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen w-full flex items-center justify-center p-4">
+                    <main className="w-full max-w-4xl mx-auto">
+                        {renderScreen()}
+                    </main>
+                </div>
+            );
+        };
+
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
