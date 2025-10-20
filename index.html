@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -145,7 +146,7 @@
             { vi: "The dog is ranning fast.", en: "The dog is running fast.", meaning: "Con chó đang chạy nhanh." },
             { vi: "They are eatting breakfast.", en: "They are eating breakfast.", meaning: "Họ đang ăn sáng." },
             { vi: "She is drinkking water.", en: "She is drinking water.", meaning: "Cô ấy đang uống nước." },
-            { vi: "He is traving to Japan.", en: "He is travelling to Japan.", meaning: "Anh ấy đang đi du lịch đến Nhật Bản." },
+            { vi: "He is traving to Japan.", en: ["He is travelling to Japan.", "He is traveling to Japan."], meaning: "Anh ấy đang đi du lịch đến Nhật Bản." },
             { vi: "We are paintting pictures.", en: "We are painting pictures.", meaning: "Chúng tôi đang vẽ tranh." },
             { vi: "The man is climing the mountain.", en: "The man is climbing the mountain.", meaning: "Người đàn ông đang leo núi." },
             { vi: "She is jumpng rope.", en: "She is jumping rope.", meaning: "Cô ấy đang nhảy dây." },
@@ -191,7 +192,7 @@
             { vi: "He gets up early.", en: "He is getting up early.", promptMeaning: "Anh ấy thức dậy sớm.", meaning: "Anh ấy đang thức dậy sớm." },
             { vi: "She puts on her shoes.", en: "She is putting on her shoes.", promptMeaning: "Cô ấy đi giày.", meaning: "Cô ấy đang đi giày." },
             { vi: "They shop in the mall.", en: "They are shopping in the mall.", promptMeaning: "Họ mua sắm ở trung tâm thương mại.", meaning: "Họ đang mua sắm ở trung tâm thương mại." },
-            { vi: "I travel to Hanoi.", en: "I am travelling to Hanoi.", promptMeaning: "Tôi đi du lịch Hà Nội.", meaning: "Tôi đang đi du lịch Hà Nội." },
+            { vi: "I travel to Hanoi.", en: ["I am travelling to Hanoi.", "I am traveling to Hanoi."], promptMeaning: "Tôi đi du lịch Hà Nội.", meaning: "Tôi đang đi du lịch Hà Nội." },
             { vi: "We plan our holiday.", en: "We are planning our holiday.", promptMeaning: "Chúng tôi lên kế hoạch cho kỳ nghỉ.", meaning: "Chúng tôi đang lên kế hoạch cho kỳ nghỉ." },
             { vi: "He stops the car.", en: "He is stopping the car.", promptMeaning: "Anh ấy dừng xe.", meaning: "Anh ấy đang dừng xe." },
             { vi: "She lies on the bed.", en: "She is lying on the bed.", promptMeaning: "Cô ấy nằm trên giường.", meaning: "Cô ấy đang nằm trên giường." },
@@ -250,7 +251,7 @@
             { vi: "She / plan her trip", en: "She is planning her trip.", meaning: "Cô ấy đang lên kế hoạch cho chuyến đi của mình." },
             { vi: "They / stop the car", en: "They are stopping the car.", meaning: "Họ đang dừng xe lại." },
             { vi: "He / shop in the mall", en: "He is shopping in the mall.", meaning: "Anh ấy đang mua sắm ở trung tâm thương mại." },
-            { vi: "We / travel to Hanoi", en: "We are travelling to Hanoi.", meaning: "Chúng tôi đang đi du lịch Hà Nội." },
+            { vi: "We / travel to Hanoi", en: ["We are travelling to Hanoi.", "We are traveling to Hanoi."], meaning: "Chúng tôi đang đi du lịch Hà Nội." },
             { vi: "I / lie on the bed", en: "I am lying on the bed.", meaning: "Tôi đang nằm trên giường." },
             { vi: "She / tie her shoes", en: "She is tying her shoes.", meaning: "Cô ấy đang buộc dây giày." },
             { vi: "They / smile at their friends", en: "They are smiling at their friends.", meaning: "Họ đang mỉm cười với bạn của họ." },
@@ -519,7 +520,7 @@
                 const isAnswerCorrect = correctAnswers.some(ans => ans.trim().toLowerCase() === userInput.trim().toLowerCase());
 
                 if (isAnswerCorrect) {
-                    if (incorrectAttempts === 0) {
+                    if (incorrectAttempts < 2) {
                         setScore(s => s + 1);
                     }
                     setFeedback('correct');
@@ -739,9 +740,10 @@
                             <button
                                 key={index}
                                 onClick={() => onSelectTopic(topic)}
-                                className={`w-full py-6 px-4 text-white font-bold text-xl rounded-xl shadow-lg transform hover:-translate-y-1 transition-all ${topic.color} ${topic.hoverColor}`}
+                                className={`w-full py-6 px-4 text-white font-bold text-xl rounded-xl shadow-lg transform hover:-translate-y-1 transition-all ${topic.color} ${topic.hoverColor} flex flex-col items-center justify-center`}
                             >
-                                {topic.name}
+                                <span>{topic.name}</span>
+                                <span className="text-sm font-normal mt-1 opacity-90">{topic.sentences.length} sentences</span>
                             </button>
                         ))}
                     </div>
@@ -843,7 +845,13 @@
             };
 
             return (
-                <div className="min-h-screen w-full flex items-center justify-center p-4">
+                <div 
+                    className="min-h-screen w-full flex items-center justify-center p-4"
+                    onContextMenu={(e) => e.preventDefault()}
+                    onCopy={(e) => e.preventDefault()}
+                    onCut={(e) => e.preventDefault()}
+                    onPaste={(e) => e.preventDefault()}
+                >
                     <main className="w-full max-w-4xl mx-auto">
                         {renderScreen()}
                     </main>
